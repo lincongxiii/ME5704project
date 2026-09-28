@@ -1,0 +1,5 @@
+selected,A,x0,y0,R,sigma,times_found,hull_max,hull_max_x,hull_max_y,max_location,exceeds_50,hull_min,hull_min_x,hull_min_y
+yes,65.1986,0.472865,0.451401,1.995,0.575664,310,65.1986,2.24405,1.3695,crest circle r = R crosses the hull,yes,0.160797,0.472865,0.451401
+no,45.2303,1.76106,1.18642,0.979285,0.364699,42,45.2303,2.39835,1.92996,crest circle r = R crosses the hull,no,1.22955,1.76106,1.18642
+no,75.3813,1.87151,0.901768,1.11612,0.2962,7,75.3813,2.38688,1.89178,crest circle r = R crosses the hull,yes,0.0622326,1.87151,0.901768
+no,131.761,1.66823,1.87954,1.39818,0.264875,10,131.761,0.41263,1.26443,crest circle r = R crosses the hull,yes,0.000117279,1.66823,1.87954

@@ -1,0 +1,171 @@
+{
+  "noise_runs": 1000,
+  "hertz": {
+    "p0": 35.05903412788737,
+    "x0": 1.731018266266349,
+    "y0": -5.0,
+    "a": 1.7895134383754103,
+    "b": 22.380191128345498,
+    "SSE": 417.2681885601335,
+    "RMSE": 9.135296257485397,
+    "pred": [
+      2.192930396275021,
+      32.65758391816696,
+      33.97569264914034,
+      29.519421709743515,
+      26.60190089576266
+    ],
+    "SSE_scipy": 417.26818856019383,
+    "concave_bound_S2": 19.55656108597285,
+    "concave_bound_weights": {
+      "S1": 0.43438914027149345,
+      "S3": 0.1900452488687782,
+      "S4": 0.37556561085972856,
+      "S5": 0.0
+    },
+    "hull_min_vertices": 2.192930396275021
+  },
+  "hertz_limit": {
+    "A": 1189.265446964447,
+    "B": 386.7378497059368,
+    "x0": 1.733745447743,
+    "C": 43.845415291137286,
+    "SSE": 416.2609013079908,
+    "pred": [
+      2.2040352681125426,
+      32.68449970428013,
+      34.26647411759675,
+      29.34875457774749,
+      26.401972770710046
+    ]
+  },
+  "ring_solutions": {
+    "starts": 2000,
+    "exact_runs": 369,
+    "distinct": 4,
+    "time_s": 16.840718746185303,
+    "selected": {
+      "A": 65.19862427824938,
+      "x0": 0.47286488960889195,
+      "y0": 0.4514008032298427,
+      "R": 1.9949975418088413,
+      "sigma": 0.5756639197212157
+    },
+    "hull_max_range": [
+      45.230308610475724,
+      131.76137112124857
+    ],
+    "n_exceeding_50": 3
+  },
+  "ring_validation": {
+    "S2": {
+      "left_out": "S2",
+      "type": "interpolation",
+      "true_p": 17.0,
+      "pred_selected": 32.967959436885906,
+      "abs_error_selected": 15.967959436885906,
+      "sigma_selected": 0.8493654190354374,
+      "selected_on_sigma_bound": false,
+      "n_distinct_exact_fits": 897,
+      "pred_min": 0.014071764352081455,
+      "pred_median": 51.224089325342256,
+      "pred_max": 159.84617678880736
+    },
+    "RMSE_ext": 249.92782787043436,
+    "MAE_ext": 165.96748987520985
+  },
+  "ring_noise": [
+    {
+      "noise_frac_of_range": 0.02,
+      "sigma": 0.8200000000000001,
+      "runs": 1000,
+      "S2_mean": 32.663709221493505,
+      "S2_std": 1.963648689714929,
+      "S2_MAE": 15.69789599295168,
+      "S2_CI95_low": 28.77160281592091,
+      "S2_CI95_high": 34.9559806483004,
+      "hull_max_mean": 66.35156757787612,
+      "hull_max_CI95_low": 60.54159222418209,
+      "hull_max_CI95_high": 74.00202155505146,
+      "frac_hull_max_over_50": 1.0,
+      "frac_hull_min_le_0": 0.0,
+      "frac_exact_fit_kept": 0.996,
+      "branch_check_runs": 30,
+      "frac_selected_branch_unchanged": 1.0
+    },
+    {
+      "noise_frac_of_range": 0.05,
+      "sigma": 2.0500000000000003,
+      "runs": 1000,
+      "S2_mean": 28.96202891864647,
+      "S2_std": 9.391969951194568,
+      "S2_MAE": 14.60629094094862,
+      "S2_CI95_low": 8.641943928559913,
+      "S2_CI95_high": 37.5335286912249,
+      "hull_max_mean": 117.64613050827963,
+      "hull_max_CI95_low": 54.98777169744796,
+      "hull_max_CI95_high": 418.6867900726876,
+      "frac_hull_max_over_50": 1.0,
+      "frac_hull_min_le_0": 0.0,
+      "frac_exact_fit_kept": 0.826,
+      "branch_check_runs": 30,
+      "frac_selected_branch_unchanged": 0.9
+    },
+    {
+      "noise_frac_of_range": 0.1,
+      "sigma": 4.1000000000000005,
+      "runs": 1000,
+      "S2_mean": 26.723135109613796,
+      "S2_std": 12.896621174650349,
+      "S2_MAE": 15.024646572259885,
+      "S2_CI95_low": 3.3350640388915336,
+      "S2_CI95_high": 42.954910117440875,
+      "hull_max_mean": 173.35816305965594,
+      "hull_max_CI95_low": 47.58722995115148,
+      "hull_max_CI95_high": 516.2165584564686,
+      "frac_hull_max_over_50": 0.951,
+      "frac_hull_min_le_0": 0.0,
+      "frac_exact_fit_kept": 0.698,
+      "branch_check_runs": 30,
+      "frac_selected_branch_unchanged": 0.7333333333333333
+    }
+  ],
+  "ring_zero": {
+    "hull_brackets_found": 0,
+    "hull_min": 0.16079696275690356,
+    "hull_min_at": [
+      0.47286488958175443,
+      0.45140080324305226
+    ],
+    "region_min": 0.16328639202870826,
+    "region_min_at": [
+      0.47500000000000003,
+      0.45
+    ],
+    "frac_hull_below_lowest_datum_2": 0.12269650874489044
+  },
+  "ring_max": {
+    "hull_max": 65.19862427824938,
+    "at": [
+      2.2440544005360823,
+      1.3694982426145845
+    ],
+    "where": "crest circle r = R crosses the hull",
+    "exceeds_50": 1.0,
+    "crest_arc_fraction_inside_hull": 0.07388888888888889,
+    "edge_max": 65.19862427824938
+  },
+  "ring_test": {
+    "theta_true": [
+      50.0,
+      1.2,
+      1.1,
+      1.0,
+      0.5
+    ],
+    "exact_fits_5_points": 4,
+    "max_param_error_5": 0.0,
+    "exact_fits_17_points": 1,
+    "max_param_error_17": 0.0
+  }
+}

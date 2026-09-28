@@ -1,0 +1,9 @@
+exact_root,method,value,abs_error,iterations,converged
+-0.388705,Bisection,-0.388705,1.84741e-13,33,
+-0.388705,Newton-Raphson,-0.388705,1.11022e-16,4,yes
+0.788705,Bisection,0.788705,1.8463e-13,33,
+0.788705,Newton-Raphson,0.788705,0,4,yes
+1.61129,Bisection,1.61129,1.84741e-13,33,
+1.61129,Newton-Raphson,1.61129,0,4,yes
+2.78871,Bisection,2.78871,1.84741e-13,33,
+2.78871,Newton-Raphson,2.78871,4.44089e-16,4,yes

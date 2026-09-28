@@ -1,0 +1,6 @@
+left_out,type,true_p,pred_selected,abs_error_selected,sigma_selected,selected_on_sigma_bound,n_distinct_exact_fits,pred_min,pred_median,pred_max
+S1,extrapolation,2,106.68,104.68,2.14181,no,291,2.72433e-11,43.512,106.68
+S2,interpolation,17,32.968,15.968,0.849365,no,897,0.0140718,51.2241,159.846
+S3,extrapolation,43,1.4407,41.5593,0.959567,no,786,3.77246e-09,0.999581,117.026
+S4,extrapolation,28,513.972,485.972,1.17601,no,705,1.4449e-10,3.6267e-05,513.972
+S5,extrapolation,36,4.34056,31.6594,1.40392,no,852,1.92734e-07,4.07776,188.487
