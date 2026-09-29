@@ -9,7 +9,8 @@ parabolic_max(f, a, b)
 
 newton_nd(grad, hess, x0)
     x_{k+1} = x_k - H^{-1} grad.  Finds a STATIONARY point (maximum, minimum or saddle); the
-    eigenvalues of the Hessian at the result classify it.  It ignores constraints.
+    eigenvalues of the Hessian at the result classify it.  Only a converged result is classified;
+    otherwise ``kind`` is "not converged".  It ignores constraints.
 
 projected_steepest_ascent(f, grad, project, x0)
     x_trial = P(x_k + alpha grad f(x_k)), P = projection onto the feasible set.  Backtracking:
@@ -66,18 +67,22 @@ def newton_nd(grad, hess, x0, tol=1e-12, max_iter=50):
         if np.linalg.norm(step) < tol:
             conv = True
             break
-    ev = np.linalg.eigvalsh(hess(x))
+    ev = np.linalg.eigvalsh(hess(x)) if np.all(np.isfinite(x)) else np.full(len(x), np.nan)
     zero = np.abs(ev) <= 1e-6 * max(1.0, np.abs(ev).max())
-    if np.all(ev < 0) and not zero.any():
+    if not conv:
+        kind = "not converged"
+    elif zero.all():
+        kind = "flat (all eigenvalues ~ 0)"
+    elif np.all(ev < 0) and not zero.any():
         kind = "maximum"
     elif np.all(ev > 0) and not zero.any():
         kind = "minimum"
-    elif np.all((ev < 0) | zero) and not zero.all():
+    elif np.all((ev < 0) | zero):
         kind = "degenerate maximum (semi-definite Hessian, non-isolated)"
-    elif np.all((ev > 0) | zero) and not zero.all():
+    elif np.all((ev > 0) | zero):
         kind = "degenerate minimum (semi-definite Hessian, non-isolated)"
     else:
-        kind = "saddle" if (ev.min() < 0 < ev.max()) else "flat (all eigenvalues ~ 0)"
+        kind = "saddle"
     return {"x": x, "iterations": it, "converged": conv, "eig": ev, "kind": kind}
 
 

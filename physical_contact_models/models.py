@@ -53,12 +53,15 @@ class Hertz:
 
     @classmethod
     def jac(cls, t, x, y):
-        """Analytic Jacobian of ``residual`` (data rows, then penalty rows)."""
+        """Analytic Jacobian of ``residual`` (data rows, then penalty rows).
+
+        A sensor outside the ellipse has p = 0 whatever theta is, so its data row is zero there."""
         p0, x0, y0, a, b = t
         qq = cls.q(t, x, y)
         s = np.sqrt(np.maximum(1e-12, 1 - qq))
         Jd = np.column_stack([s, p0 * (x - x0) / (a * a * s), p0 * (y - y0) / (b * b * s),
                               p0 * (x - x0) ** 2 / (a ** 3 * s), p0 * (y - y0) ** 2 / (b ** 3 * s)])
+        Jd = Jd * (qq < 1)[:, None]
         dq = np.column_stack([np.zeros_like(x), -2 * (x - x0) / a ** 2, -2 * (y - y0) / b ** 2,
                               -2 * (x - x0) ** 2 / a ** 3, -2 * (y - y0) ** 2 / b ** 3])
         return np.vstack([Jd, cls.W * dq * ((qq - (1 - cls.DELTA)) > 0)[:, None]])
@@ -139,32 +142,57 @@ def distinct_exact(model, runs, x, y, p):
     return sols, counts
 
 
-def select_largest_sigma(sols, x=None, y=None, p=None, n_refine=5):
+def select_largest_sigma(sols, x=None, y=None, p=None, n_refine=5, upper=None):
     """Selection rule fixed before looking at (b)/(c): among the exact fits take the broadest ring.
 
     With 5 points the exact fits are isolated, so the largest sampled sigma is the answer.  With 4
     points they form a continuous family and sampling only approximates the largest sigma; then
     (x, y, p given) the best candidates are refined by solving
         maximize sigma  subject to  f(theta; x_i, y_i) = p_i  for every training point
-    with SLSQP (equality constraints).  A result on the sigma bound means the rule has no finite
-    answer for that data set; it is reported as such.
+    with SLSQP (equality constraints), within the bounds Ring.lower .. ``upper`` (default Ring.upper).
+    If the result sits on an artificial cap (see ``finite_rule_answer``), sigma would keep growing
+    with a larger cap: the rule then has no finite answer for that data set.
     """
     if not sols:
         return None
     if x is None:
         return max(sols, key=lambda t: t[4])
     from scipy.optimize import minimize
+    hi = Ring.upper if upper is None else np.asarray(upper, float)
     cons = {"type": "eq", "fun": lambda t: Ring.f(t, x, y) - p, "jac": lambda t: Ring.jac(t, x, y)}
     best = max(sols, key=lambda t: t[4])
     for t0 in sorted(sols, key=lambda t: -t[4])[:n_refine]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             r = minimize(lambda t: -t[4], t0, jac=lambda t: np.array([0, 0, 0, 0, -1.0]), method="SLSQP",
-                         constraints=[cons], bounds=list(zip(Ring.lower, Ring.upper)),
+                         constraints=[cons], bounds=list(zip(Ring.lower, hi)),
                          options={"maxiter": 1000, "ftol": 1e-14})
         if sse(Ring, r.x, x, y, p) < 1e-8 and r.x[4] > best[4]:
             best = r.x
     return best
+
+
+# R = 0 turns the ring into a single Gaussian bump and A = 0 is zero pressure: edges of the model
+# family.  Every other bound is an arbitrary cap of the search box.
+NATURAL_BOUNDS = {("A", "lower"), ("R", "lower")}
+
+
+def bounds_hit(t, upper=None, rel=1e-6):
+    """Ring parameters of t that sit on a bound, e.g. ["A upper", "R lower"]."""
+    hi = Ring.upper if upper is None else np.asarray(upper, float)
+    out = []
+    for n, v, lo, up in zip(Ring.names, t, Ring.lower, hi):
+        w = rel * (up - lo)
+        if v - lo <= w:
+            out.append(f"{n} lower")
+        elif up - v <= w:
+            out.append(f"{n} upper")
+    return out
+
+
+def finite_rule_answer(t, upper=None):
+    """False if the largest-sigma fit sits on an artificial cap, i.e. the rule has no finite answer."""
+    return all(tuple(b.split()) in NATURAL_BOUNDS for b in bounds_hit(t, upper))
 
 
 # =============================================================================== geometry / extrema

@@ -40,10 +40,12 @@ gradient are frozen for that step (active set). We ran the solver from 100 rando
 
 | Solver | p0 | x0 | y0 | a | b | SSE | runs reaching the best SSE |
 |---|---|---|---|---|---|---|---|
-| Levenberg–Marquardt (own) | 35.06 | 1.731 | **−5.00 (bound)** | 1.790 | 22.38 | 417.27 | 52 % |
-| scipy trust-region (check) | 35.06 | 1.731 | −5.00 (bound) | 1.790 | 22.38 | 417.27 | 88 % |
+| Levenberg–Marquardt (own) | 35.06 | 1.731 | **−5.00 (bound)** | 1.790 | 22.38 | 417.27 | 100 % |
+| scipy trust-region (check) | 35.06 | 1.731 | −5.00 (bound) | 1.790 | 22.38 | 417.27 | 87 % |
 
-Both solvers reach the same optimum. The fitted pressures at S1–S5 are 2.19, 32.66, 33.98, 29.52 and 26.60,
+Both solvers reach the same optimum. (The analytic Jacobian is zero for a sensor outside the ellipse,
+where p = 0 whatever the parameters are. Before this was imposed, only about half of the starts reached
+the best SSE.) The fitted pressures at S1–S5 are 2.19, 32.66, 33.98, 29.52 and 26.60,
 compared with the measured 2, 17, 43, 28 and 36 (RMSE 9.14). **The Hertz model cannot pass through the
 data.**
 
@@ -71,10 +73,10 @@ values and refitted the remaining parameters (Table 2, Fig. 1).
 
 | y0 | −1 | −2 | −5 | −10 | −20 | −50 | −100 | −1000 |
 |---|---|---|---|---|---|---|---|---|
-| SSE | 422.64 | 417.88 | 417.27 | 416.86 | 416.59 | 416.40 | 416.33 | 416.27 |
-| b | 41.8 | 20.8 | 22.4 | 28.7 | 40.7 | 73.3 | 124.8 | 1026.8 |
+| SSE | 418.14 | 417.88 | 417.27 | 416.86 | 416.59 | 416.40 | 416.33 | 416.27 |
+| b | 34.7 | 20.8 | 22.4 | 28.7 | 40.7 | 73.3 | 124.8 | 1026.8 |
 
-The error keeps decreasing as the ellipse moves away. Expanding the model for $y_0\to-\infty$,
+All eight fits converge with every sensor inside the ellipse. The error keeps decreasing as the ellipse moves away. Expanding the model for $y_0\to-\infty$,
 $b\to\infty$ gives the four-parameter limit
 
 $$p = \sqrt{A - B(x-x_0)^2 - C\,y},$$
@@ -149,28 +151,34 @@ the full range over all four exact fits alongside every result for the selected 
 With four training points the five parameters are underdetermined, and the exact fits form a continuous
 family. The same rule was applied: maximise σ subject to the fit passing exactly through the four points.
 This was solved as an equality-constrained optimisation (SLSQP), started from the best of 1000 sampled
-exact fits. In every fold the maximum lies strictly inside the parameter bounds, so the rule has a
-well-defined answer.
+exact fits. Only in the S2 fold does the maximum lie strictly inside the parameter bounds. In the S3 and S5
+folds it lies at R = 0, where the ring degenerates into a single Gaussian peak; this is an edge of the model
+family, so the rule still has a well-defined answer. In the S1 and S4 folds it lies on the amplitude cap
+A = 2000 of the search box. Raising that cap raises σ further (S1: 2.14 → 3.08, S4: 1.18 → 1.66 for a
+cap 100 times larger), so the rule has **no finite answer** there, and the prediction only reflects the
+arbitrary cap.
 
 **Table 4 Leave-one-out validation of the ring model**
 
 | Left out | Type | True p | Prediction (selected fit) | Abs. error | Prediction range over all exact fits |
 |---|---|---|---|---|---|
 | S2 | interpolation | 17 | 32.97 | 15.97 | 0.01 – 159.8 |
-| S1 | extrapolation | 2 | 106.68 | 104.68 | 0.00 – 106.7 |
+| S1 | extrapolation | 2 | no finite answer (106.7 at A ≤ 2000, 113.7 at A ≤ 2·10⁵) | — | 0.00 – 106.7 |
 | S3 | extrapolation | 43 | 1.44 | 41.56 | 0.00 – 117.0 |
-| S4 | extrapolation | 28 | 513.97 | 485.97 | 0.00 – 514.0 |
+| S4 | extrapolation | 28 | no finite answer (514.0 at A ≤ 2000, 843.5 at A ≤ 2·10⁵) | — | 0.00 – 514.0 |
 | S5 | extrapolation | 36 | 4.34 | 31.66 | 0.00 – 188.5 |
 
-Over the four extrapolation folds, RMSE_ext = 249.9 and MAE_ext = 166.0.
+Over the two extrapolation folds with a finite answer (S3, S5), RMSE_ext = 36.9 and MAE_ext = 36.6; for
+S1 and S4 the rule gives no prediction at all. The upper ends of the S1 and S4 ranges are the capped fits
+and would also grow with the cap.
 
 Two points must be stated clearly.
 
 1. **The S2 test is not independent for this model.** The ring model was chosen *because* S2 is a local
    low (Section 1.3). The data point used to validate the model therefore also motivated it.
 2. **Four points do not constrain the ring.** The exact four-point fits predict anything from 0 to 160 at
-   S2, so the selected fit's error of 16.0 reflects the selection rule as much as the model. The
-   extrapolation errors are extreme. A ring fitted to four points can put its crest almost anywhere.
+   S2, so the selected fit's error of 16.0 reflects the selection rule as much as the model. In two of
+   the four extrapolation folds the rule does not even give a finite prediction.
 
 ---
 
@@ -256,11 +264,13 @@ applied parabolic interpolation inside the bracket around the best sample. The r
 Newton's method solves $\nabla p = 0$ and therefore finds stationary points of any type. From five
 starting points inside the hull, (0.5, 0.5), (1.0, 1.0), (1.5, 0.5), (1.5, 1.5) and (2.0, 1.0):
 
-- **Three starts are attracted to the ring centre (0.47, 0.45),** the location of the minimum. They do not
-  converge. After 100 iterations they still wander at distance ≈ 0.1 from the centre (p ≈ 0.28, Hessian
-  eigenvalues 8.43 and 16.86, i.e. minimum-like curvature). The reason is that $r$ is not differentiable
-  at the centre (the surface has a small cone-shaped tip there), so $\nabla p=0$ has no solution at that
-  point.
+- **Three starts fall into a period-2 cycle around the ring centre (0.47, 0.45),** the location of the
+  minimum. They jump back and forth between two points on opposite sides of the centre, at distance
+  r* ≈ 0.0961 (p ≈ 0.28). Near the centre p depends on r only, and at r* the radial Newton step maps r to
+  −r. The cause is that $r$ is not differentiable at the centre (the surface has a small cone-shaped tip
+  there), so $\nabla p=0$ has no solution at that point. The Hessian at the cycle points has eigenvalues
+  8.43 and 16.86 (ratio exactly 2, a consequence of the cycle condition), which look like a minimum, but
+  the iteration does not converge and is reported as "not converged".
 - **One start drifts far outside the region,** where the surface is flat.
 - **One start, (2.0, 1.0), reaches the crest** at (2.350, 1.126), outside the hull, with p = 65.20.
   There the Hessian eigenvalues are −196.7 and **0**: the maximum is **degenerate**, because it is not an
@@ -329,7 +339,11 @@ recovered exactly from the five sensor positions.
 5. **Methodological lessons.** Multi-start optimisation is essential: 2000 starts found four solutions,
    and the least frequent was found only 7 times. Newton's method finds minima and saddle points as
    readily as maxima, and fails at non-isolated maxima. Parabolic interpolation along an edge needs a
-   preceding scan when the edge function is not unimodal.
+   preceding scan when the edge function is not unimodal. An analytic Jacobian must match the residual
+   everywhere, including where the model is flat. A Hertz Jacobian that was nonzero outside the ellipse
+   left about half of the Levenberg–Marquardt runs and one row of Table 2 unconverged. An optimum on an
+   arbitrary cap of the search box is not an answer, so the bound check must cover every parameter,
+   not only the one being optimised.
 
 **Outlook.** Among the two contact models, only the ring is compatible with the measurements. However, its
 S2 hold-out error (16.0) and its sensitivity to noise above 2 % show that five sensors do not fix the ring's
