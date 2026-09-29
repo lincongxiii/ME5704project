@@ -120,10 +120,21 @@ def predict(
 
 
 # ============================================================
-# 5. Convex-hull grid
+# 5. Exact extrema inside the sensor convex hull
 #
 # We evaluate model stability only inside the original
 # sensor convex hull.
+#
+# A quadratic attains its minimum and maximum over a convex
+# polygon at one of these candidates:
+#   (i)   a hull vertex,
+#   (ii)  a stationary point along a hull edge,
+#   (iii) the interior stationary point, if inside the hull.
+#
+# Evaluating every candidate gives the EXACT extrema.
+# A rectangular grid misses the hull vertices S1 and S3,
+# where the clean extrema p = 2 and p = 43 occur, so grid
+# extrema are biased (minimum too high, maximum too low).
 # ============================================================
 
 hull = ConvexHull(X)
@@ -137,37 +148,65 @@ hull_path = Path(
 )
 
 
-x_grid = np.linspace(
-    X[:, 0].min(),
-    X[:, 0].max(),
-    180
-)
+def exact_hull_extrema(
+    coefficients,
+    mean_xy,
+    std_xy
+):
+    """Exact (min, max) of the fitted quadratic over the
+    sensor convex hull, worked in standardised coordinates."""
 
-y_grid = np.linspace(
-    X[:, 1].min(),
-    X[:, 1].max(),
-    180
-)
+    b0, b1, b2, b3, b4, b5 = coefficients
 
-XX, YY = np.meshgrid(
-    x_grid,
-    y_grid
-)
+    # p(z) = b0 + g.z + 0.5 z^T H z
+    g = np.array([b1, b2])
 
-grid_points = np.column_stack([
-    XX.ravel(),
-    YY.ravel()
-])
+    H = np.array([
+        [2*b3, b4],
+        [b4, 2*b5]
+    ])
 
+    corners = (
+        (hull_vertices - mean_xy)
+        / std_xy
+    )
 
-inside_mask = hull_path.contains_points(
-    grid_points,
-    radius=1e-10
-)
+    candidates = list(corners)
 
-hull_grid_points = grid_points[
-    inside_mask
-]
+    # (ii) edge z(t) = zA + t d, stationary where dp/dt = 0
+    for i in range(len(corners)):
+
+        zA = corners[i]
+        zB = corners[(i + 1) % len(corners)]
+
+        d = zB - zA
+
+        curvature = d @ H @ d
+
+        if abs(curvature) > 1e-12:
+
+            t = -np.dot(g + H @ zA, d) / curvature
+
+            if 0.0 < t < 1.0:
+                candidates.append(zA + t*d)
+
+    # (iii) interior stationary point H z = -g
+    if abs(np.linalg.det(H)) > 1e-12:
+
+        z_star = np.linalg.solve(H, -g)
+
+        if hull_path.contains_point(
+            z_star*std_xy + mean_xy,
+            radius=1e-10
+        ):
+            candidates.append(z_star)
+
+    values = (
+        quadratic_matrix(np.array(candidates))
+        @ coefficients
+    )
+
+    return np.min(values), np.max(values)
 
 
 # ============================================================
@@ -271,7 +310,7 @@ for noise_level in noise_levels:
 
         # ====================================================
         # A. Full-data model:
-        #    pressure extrema inside original convex hull
+        #    exact pressure extrema inside original convex hull
         # ====================================================
 
         (
@@ -284,8 +323,7 @@ for noise_level in noise_levels:
         )
 
 
-        hull_predictions = predict(
-            hull_grid_points,
+        hull_min, hull_max = exact_hull_extrema(
             coefficients_full,
             mean_full,
             std_full
@@ -293,15 +331,11 @@ for noise_level in noise_levels:
 
 
         hull_minima.append(
-            np.min(
-                hull_predictions
-            )
+            hull_min
         )
 
         hull_maxima.append(
-            np.max(
-                hull_predictions
-            )
+            hull_max
         )
 
 
