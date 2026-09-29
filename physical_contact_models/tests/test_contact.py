@@ -3,7 +3,7 @@ contact models (known answers)."""
 import numpy as np
 
 import data
-from models import Hertz, Ring, distinct_exact, fit, ring_hull_max, select_largest_sigma
+from models import Hertz, Ring, bounds_hit, distinct_exact, finite_rule_answer, fit, ring_hull_max, select_largest_sigma
 from numerics.nlls import levenberg_marquardt, numerical_jacobian
 from numerics.optimize import newton_nd, parabolic_max, project_to_polygon, projected_steepest_ascent
 from numerics.rootfind import bisection, newton_raphson, scan_brackets
@@ -124,3 +124,47 @@ def test_own_lm_and_scipy_reach_the_same_hertz_optimum():
     ref, _, on_bound = scipy_hertz_multistart()
     assert abs(sse(Hertz, s["theta"]) - sse(Hertz, ref)) < 1e-6
     assert "y0" in on_bound   # the optimum sits on the y0 bound: the ellipse wants to grow without limit
+
+
+def test_hertz_jacobian_is_zero_for_sensors_outside_the_ellipse():
+    # S1 and S4 lie outside this ellipse (q > 1.1), the other three inside (q < 0.9): p = 0 at S1 and S4
+    # for every nearby theta, so their data rows must be zero; the active penalty rows are checked too
+    th = np.array([40.0, 1.3, 1.0, 1.2, 1.3])
+    q = Hertz.q(th, data.X, data.Y)
+    assert np.sum(q > 1.1) == 2 and np.sum(q < 0.9) == 3
+    np.testing.assert_allclose(Hertz.jac(th, data.X, data.Y),
+                               numerical_jacobian(lambda t: Hertz.residual(t, data.X, data.Y, data.P), th), atol=1e-4)
+
+
+def test_hertz_profile_fits_all_converge_and_decrease():
+    from run_contact import a2_hertz_limit
+    nums = {}
+    rows = a2_hertz_limit(nums)
+    assert all(r["converged"] for r in rows)
+    sse_profile = [r["SSE"] for r in rows]           # y0 = -1, -2, -5, ..., -1000
+    assert all(a > b for a, b in zip(sse_profile, sse_profile[1:]))
+    assert sse_profile[-1] > nums["hertz_limit"]["SSE"]
+
+
+def test_newton_nd_classifies_only_converged_points():
+    # p = x^4 - y^4: the Hessian vanishes at the stationary point, so the second-order test says nothing
+    grad = lambda v: np.array([4 * v[0] ** 3, -4 * v[1] ** 3])  # noqa: E731
+    hess = lambda v: np.diag([12 * v[0] ** 2, -12 * v[1] ** 2])  # noqa: E731
+    assert newton_nd(grad, hess, (1.0, 1.0), max_iter=5)["kind"] == "not converged"
+    r = newton_nd(grad, hess, (1.0, 1.0), max_iter=200)
+    assert r["converged"] and r["kind"].startswith("flat")
+
+
+def test_loo_rule_on_the_A_cap_has_no_finite_answer():
+    # S4 left out: the largest-sigma exact fit sits on the cap A = 2000, and a larger cap gives a larger sigma
+    tr = np.array([0, 1, 2, 4])
+    x, y, p = data.X[tr], data.Y[tr], data.P[tr]
+    seed = np.array([2000.0, 0.3976, 0.3784, 4.7869, 1.1760])
+    t1 = select_largest_sigma([seed], x, y, p)
+    np.testing.assert_allclose(Ring.f(t1, x, y), p, atol=1e-7)
+    assert "A upper" in bounds_hit(t1) and not finite_rule_answer(t1)
+    hi = Ring.upper.copy()
+    hi[0] *= 10
+    t2 = select_largest_sigma([t1], x, y, p, upper=hi)
+    np.testing.assert_allclose(Ring.f(t2, x, y), p, atol=1e-7)
+    assert t2[4] > t1[4] + 0.1

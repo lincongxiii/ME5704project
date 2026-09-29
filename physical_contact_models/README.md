@@ -26,12 +26,13 @@ The written analysis is in [`report/physical_contact_models.md`](report/physical
 ```
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt       # Windows (Linux/macOS: .venv/bin/python)
-.venv\Scripts\python -m pytest                                # 13 tests, about 1 minute
+.venv\Scripts\python -m pytest                                # 17 tests, about 20 seconds
 .venv\Scripts\python run_contact.py                           # full analysis, about 11 minutes
 .venv\Scripts\python run_contact.py --mc 20 --out out         # quick run into out/ (keeps results/ intact)
 ```
 
-Everything is seeded, so a full run reproduces the committed `results/` and `figures/`.
+Everything is seeded, and `requirements.txt` pins the package versions (Python 3.12). With those versions a
+full run reproduces the committed `results/` and `figures/`; other versions may change the last digits.
 
 ## Files
 

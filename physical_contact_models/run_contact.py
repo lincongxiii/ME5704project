@@ -25,8 +25,8 @@ from scipy.optimize import least_squares, linprog
 
 import data
 import plotting as P
-from models import (HULL, PR, S2, SEED, X, Y, Hertz, Ring, distinct_exact, edge_max, fit,
-                    hull_y_interval, ring_hull_max, ring_hull_min, select_largest_sigma, sse)
+from models import (HULL, PR, S2, SEED, X, Y, Hertz, Ring, bounds_hit, distinct_exact, edge_max, finite_rule_answer,
+                    fit, hull_y_interval, ring_hull_max, ring_hull_min, select_largest_sigma, sse)
 from numerics.nlls import levenberg_marquardt, multistart_lm
 from numerics.optimize import newton_nd, project_to_polygon, projected_steepest_ascent
 from numerics.rootfind import bisection, newton_raphson, scan_brackets
@@ -111,7 +111,7 @@ def a2_hertz_limit(nums):
         r = levenberg_marquardt(lambda t: Hertz.residual(t, X, Y, PR), start, lo, hi,
                                 jac=lambda t: Hertz.jac(t, X, Y), max_iter=5000)
         rows.append({"y0_fixed": y0, **dict(zip(Hertz.names, r["theta"])), "SSE": sse(Hertz, r["theta"]),
-                     "iterations": r["iterations"]})
+                     "iterations": r["iterations"], "converged": r["converged"]})
     nums["hertz_limit"] = {"A": A, "B": B, "x0": xl, "C": C, "SSE": float(np.sum(res_lim(lim["theta"]) ** 2)),
                            "pred": (res_lim(lim["theta"]) + PR).tolist()}
     return rows
@@ -139,7 +139,11 @@ def b1_solutions(nums, n_starts):
 
 def b2_validation(nums, n_starts):
     """4 training points, 5 parameters: a family of exact fits.  Report its prediction range and the
-    prediction of the fit selected by the same rule (largest sigma)."""
+    prediction of the fit selected by the same rule (largest sigma).
+
+    If the selected fit sits on an artificial cap of the search box, the rule has no finite answer:
+    the fold is re-solved with the A cap raised 10x and 100x to show that sigma and the prediction keep
+    moving, and it is left out of RMSE_ext / MAE_ext."""
     rows = []
     for i in range(5):
         tr = np.array([j for j in range(5) if j != i])
@@ -148,16 +152,30 @@ def b2_validation(nums, n_starts):
         preds = np.array([Ring.f(t, X[i], Y[i]) for t in sols]) if sols else np.array([np.nan])
         ch = select_largest_sigma(sols, X[tr], Y[tr], PR[tr])
         sel = float(Ring.f(ch, X[i], Y[i])) if ch is not None else np.nan
-        rows.append({"left_out": data.NAMES[i], "type": "interpolation" if i == S2 else "extrapolation",
-                     "true_p": PR[i], "pred_selected": sel, "abs_error_selected": abs(sel - PR[i]),
-                     "sigma_selected": ch[4] if ch is not None else np.nan,
-                     "selected_on_sigma_bound": bool(ch is not None and ch[4] > 0.999 * Ring.upper[4]),
-                     "n_distinct_exact_fits": len(sols), "pred_min": float(np.nanmin(preds)),
-                     "pred_median": float(np.nanmedian(preds)), "pred_max": float(np.nanmax(preds))})
-    ext = [r for r in rows if r["type"] == "extrapolation"]
+        finite = bool(ch is not None and finite_rule_answer(ch))
+        row = {"left_out": data.NAMES[i], "type": "interpolation" if i == S2 else "extrapolation",
+               "true_p": PR[i], "pred_selected": sel, "abs_error_selected": abs(sel - PR[i]),
+               "sigma_selected": ch[4] if ch is not None else np.nan,
+               "bounds_hit": ", ".join(bounds_hit(ch)) if ch is not None else "",
+               "rule_has_finite_answer": finite,
+               "n_distinct_exact_fits": len(sols), "pred_min": float(np.nanmin(preds)),
+               "pred_median": float(np.nanmedian(preds)), "pred_max": float(np.nanmax(preds))}
+        if ch is not None and not finite:
+            t = ch
+            for factor in (10, 100):
+                hi = Ring.upper.copy()
+                hi[0] *= factor
+                t = select_largest_sigma([t], X[tr], Y[tr], PR[tr], upper=hi)
+                row[f"sigma_A_cap_x{factor}"] = t[4]
+                row[f"pred_A_cap_x{factor}"] = float(Ring.f(t, X[i], Y[i]))
+        rows.append(row)
+    ext = [r for r in rows if r["type"] == "extrapolation" and r["rule_has_finite_answer"]]
     e = np.array([r["pred_selected"] - r["true_p"] for r in ext])
     nums["ring_validation"] = {"S2": rows[S2], "RMSE_ext": float(np.sqrt(np.mean(e ** 2))),
-                               "MAE_ext": float(np.mean(np.abs(e)))}
+                               "MAE_ext": float(np.mean(np.abs(e))),
+                               "ext_folds_used": [r["left_out"] for r in ext],
+                               "folds_without_finite_answer": [r["left_out"] for r in rows
+                                                               if not r["rule_has_finite_answer"]]}
     return rows
 
 
