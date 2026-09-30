@@ -1,0 +1,30 @@
+{
+  "reference_sha256": "352bb5098c4ddd96544068000a81473e5cf1559885bb327691a6853be44ea3b0",
+  "changed_parts": [
+    "docProps/core.xml",
+    "word/document.xml",
+    "word/media/image1.png",
+    "word/media/image2.png",
+    "word/media/image3.png"
+  ],
+  "preserved_parts": [
+    "[Content_Types].xml",
+    "_rels/.rels",
+    "docProps/app.xml",
+    "word/_rels/document.xml.rels",
+    "word/styles.xml",
+    "word/stylesWithEffects.xml",
+    "word/settings.xml",
+    "word/webSettings.xml",
+    "word/fontTable.xml",
+    "word/theme/theme1.xml",
+    "customXml/item1.xml",
+    "customXml/_rels/item1.xml.rels",
+    "customXml/itemProps1.xml",
+    "word/numbering.xml",
+    "word/footer1.xml",
+    "docProps/thumbnail.jpeg"
+  ],
+  "section_geometry_preserved": true,
+  "equations_preserved": true
+}

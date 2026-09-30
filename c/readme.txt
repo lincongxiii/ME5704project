@@ -79,7 +79,7 @@
 - 分别加入原始压力范围 2%、5% 和 10% 的 Gaussian noise；
 - 在每个噪声水平下重复生成大量随机数据并重新拟合模型；
 - 分析 S2 留出预测的均值、标准差和 MAE；
-- 分析 sensor convex hull 内的最小和最大压力；
+- 分析 sensor convex hull 内的最小和最大压力（由凸包顶点、边上驻点和内部驻点精确求得，不用网格近似）；
 - 统计出现 zero/negative pressure 的比例；
 - 统计超过 pain threshold 50 的比例；
 - 计算相应的 Monte Carlo 95% 区间。

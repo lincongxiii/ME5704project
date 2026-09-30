@@ -1,0 +1,7 @@
+# virtual environment and caches
+.venv/
+__pycache__/
+.pytest_cache/
+
+# scratch output of quick runs (python run_contact.py --out ...)
+out/

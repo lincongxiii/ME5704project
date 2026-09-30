@@ -120,10 +120,21 @@ def predict(
 
 
 # ============================================================
-# 5. Convex-hull grid
+# 5. Exact extrema inside the sensor convex hull
 #
 # We evaluate model stability only inside the original
 # sensor convex hull.
+#
+# A quadratic attains its minimum and maximum over a convex
+# polygon at one of these candidates:
+#   (i)   a hull vertex,
+#   (ii)  a stationary point along a hull edge,
+#   (iii) the interior stationary point, if inside the hull.
+#
+# Evaluating every candidate gives the EXACT extrema.
+# A rectangular grid misses the hull vertices S1 and S3,
+# where the clean extrema p = 2 and p = 43 occur, so grid
+# extrema are biased (minimum too high, maximum too low).
 # ============================================================
 
 hull = ConvexHull(X)
@@ -137,552 +148,576 @@ hull_path = Path(
 )
 
 
-x_grid = np.linspace(
-    X[:, 0].min(),
-    X[:, 0].max(),
-    180
-)
+def exact_hull_extrema(
+    coefficients,
+    mean_xy,
+    std_xy
+):
+    """Exact (min, max) of the fitted quadratic over the
+    sensor convex hull, worked in standardised coordinates."""
 
-y_grid = np.linspace(
-    X[:, 1].min(),
-    X[:, 1].max(),
-    180
-)
+    b0, b1, b2, b3, b4, b5 = coefficients
 
-XX, YY = np.meshgrid(
-    x_grid,
-    y_grid
-)
+    # p(z) = b0 + g.z + 0.5 z^T H z
+    g = np.array([b1, b2])
 
-grid_points = np.column_stack([
-    XX.ravel(),
-    YY.ravel()
-])
+    H = np.array([
+        [2*b3, b4],
+        [b4, 2*b5]
+    ])
 
+    corners = (
+        (hull_vertices - mean_xy)
+        / std_xy
+    )
 
-inside_mask = hull_path.contains_points(
-    grid_points,
-    radius=1e-10
-)
+    candidates = list(corners)
 
-hull_grid_points = grid_points[
-    inside_mask
-]
+    # (ii) edge z(t) = zA + t d, stationary where dp/dt = 0
+    for i in range(len(corners)):
 
+        zA = corners[i]
+        zB = corners[(i + 1) % len(corners)]
 
-# ============================================================
-# 6. Monte Carlo settings
-# ============================================================
+        d = zB - zA
 
-noise_levels = [
-    0.00,
-    0.02,
-    0.05,
-    0.10
-]
+        curvature = d @ H @ d
 
-n_simulations = 1000
+        if abs(curvature) > 1e-12:
 
-rng = np.random.default_rng(
-    5704
-)
+            t = -np.dot(g + H @ zA, d) / curvature
 
+            if 0.0 < t < 1.0:
+                candidates.append(zA + t*d)
 
-# ============================================================
-# IMPORTANT:
-#
-# Noise model:
-#
-# p_noisy = p + epsilon
-#
-# epsilon_i ~ N(0, sigma^2)
-#
-# sigma = noise_level * pressure range
-#
-# Pressure range = 43 - 2 = 41
-#
-# This uses the SAME absolute noise scale for every sensor.
-# ============================================================
+    # (iii) interior stationary point H z = -g
+    if abs(np.linalg.det(H)) > 1e-12:
 
-pressure_range = (
-    np.max(p_original)
-    - np.min(p_original)
-)
+        z_star = np.linalg.solve(H, -g)
+
+        if hull_path.contains_point(
+            z_star*std_xy + mean_xy,
+            radius=1e-10
+        ):
+            candidates.append(z_star)
+
+    values = (
+        quadratic_matrix(np.array(candidates))
+        @ coefficients
+    )
+
+    return np.min(values), np.max(values)
 
 
-# ============================================================
-# 7. Storage
-# ============================================================
+if __name__ == '__main__':
+    # ============================================================
+    # 6. Monte Carlo settings
+    # ============================================================
 
-summary = {}
+    noise_levels = [
+        0.00,
+        0.02,
+        0.05,
+        0.10
+    ]
 
-all_s2_predictions = {}
+    n_simulations = 1000
 
-all_hull_minima = {}
-
-all_hull_maxima = {}
-
-
-# ============================================================
-# 8. Monte Carlo simulation
-# ============================================================
-
-for noise_level in noise_levels:
-
-    s2_predictions = []
-
-    hull_minima = []
-
-    hull_maxima = []
-
-
-    sigma = (
-        noise_level
-        * pressure_range
+    rng = np.random.default_rng(
+        5704
     )
 
 
-    for simulation in range(
-        n_simulations
-    ):
+    # ============================================================
+    # IMPORTANT:
+    #
+    # Noise model:
+    #
+    # p_noisy = p + epsilon
+    #
+    # epsilon_i ~ N(0, sigma^2)
+    #
+    # sigma = noise_level * pressure range
+    #
+    # Pressure range = 43 - 2 = 41
+    #
+    # This uses the SAME absolute noise scale for every sensor.
+    # ============================================================
 
-        # ----------------------------------------------------
-        # Generate noisy measurements
-        # ----------------------------------------------------
-
-        if noise_level == 0.0:
-
-            p_noisy = (
-                p_original.copy()
-            )
-
-        else:
-
-            noise = rng.normal(
-                loc=0.0,
-                scale=sigma,
-                size=len(p_original)
-            )
-
-            p_noisy = (
-                p_original + noise
-            )
-
-
-        # ====================================================
-        # A. Full-data model:
-        #    pressure extrema inside original convex hull
-        # ====================================================
-
-        (
-            coefficients_full,
-            mean_full,
-            std_full
-        ) = fit_minimum_norm(
-            X,
-            p_noisy
-        )
-
-
-        hull_predictions = predict(
-            hull_grid_points,
-            coefficients_full,
-            mean_full,
-            std_full
-        )
-
-
-        hull_minima.append(
-            np.min(
-                hull_predictions
-            )
-        )
-
-        hull_maxima.append(
-            np.max(
-                hull_predictions
-            )
-        )
-
-
-        # ====================================================
-        # B. S2 withheld interpolation validation
-        #
-        # Train using S1, S3, S4, S5 only.
-        # Predict ORIGINAL S2 pressure location.
-        # ====================================================
-
-        s2_index = 1
-
-        mask = np.ones(
-            len(X),
-            dtype=bool
-        )
-
-        mask[s2_index] = False
-
-
-        (
-            coefficients_s2,
-            mean_s2,
-            std_s2
-        ) = fit_minimum_norm(
-            X[mask],
-            p_noisy[mask]
-        )
-
-
-        s2_prediction = predict(
-            X[s2_index].reshape(
-                1,
-                -1
-            ),
-            coefficients_s2,
-            mean_s2,
-            std_s2
-        )[0]
-
-
-        s2_predictions.append(
-            s2_prediction
-        )
-
-
-    # Convert to arrays
-
-    s2_predictions = np.array(
-        s2_predictions
-    )
-
-    hull_minima = np.array(
-        hull_minima
-    )
-
-    hull_maxima = np.array(
-        hull_maxima
+    pressure_range = (
+        np.max(p_original)
+        - np.min(p_original)
     )
 
 
-    all_s2_predictions[
-        noise_level
-    ] = s2_predictions
+    # ============================================================
+    # 7. Storage
+    # ============================================================
 
-    all_hull_minima[
-        noise_level
-    ] = hull_minima
+    summary = {}
 
-    all_hull_maxima[
-        noise_level
-    ] = hull_maxima
+    all_s2_predictions = {}
 
+    all_hull_minima = {}
 
-    # --------------------------------------------------------
-    # S2 error is evaluated against the original known
-    # measurement p = 17.
-    # --------------------------------------------------------
-
-    s2_errors = (
-        s2_predictions
-        - p_original[1]
-    )
+    all_hull_maxima = {}
 
 
-    # --------------------------------------------------------
-    # Engineering-conclusion frequencies
-    # --------------------------------------------------------
+    # ============================================================
+    # 8. Monte Carlo simulation
+    # ============================================================
 
-    damage_frequency = np.mean(
-        hull_minima <= 0
-    )
+    for noise_level in noise_levels:
 
-    pain_frequency = np.mean(
-        hull_maxima > 50
-    )
+        s2_predictions = []
+
+        hull_minima = []
+
+        hull_maxima = []
 
 
-    summary[
-        noise_level
-    ] = {
+        sigma = (
+            noise_level
+            * pressure_range
+        )
 
-        "sigma": sigma,
 
-        "s2_mean":
-            np.mean(
-                s2_predictions
-            ),
+        for simulation in range(
+            n_simulations
+        ):
 
-        "s2_std":
-            np.std(
-                s2_predictions
-            ),
+            # ----------------------------------------------------
+            # Generate noisy measurements
+            # ----------------------------------------------------
 
-        "s2_mae":
-            np.mean(
-                np.abs(
-                    s2_errors
+            if noise_level == 0.0:
+
+                p_noisy = (
+                    p_original.copy()
                 )
-            ),
 
-        "hull_min_mean":
-            np.mean(
-                hull_minima
-            ),
+            else:
 
-        "hull_min_std":
-            np.std(
-                hull_minima
-            ),
+                noise = rng.normal(
+                    loc=0.0,
+                    scale=sigma,
+                    size=len(p_original)
+                )
 
-        "hull_max_mean":
-            np.mean(
-                hull_maxima
-            ),
-
-        "hull_max_std":
-            np.std(
-                hull_maxima
-            ),
-
-        "damage_frequency":
-            damage_frequency,
-
-        "pain_frequency":
-            pain_frequency
-    }
+                p_noisy = (
+                    p_original + noise
+                )
 
 
-# ============================================================
-# 9. Print summary table
-# ============================================================
+            # ====================================================
+            # A. Full-data model:
+            #    exact pressure extrema inside original convex hull
+            # ====================================================
 
-print(
-    "MONTE CARLO NOISE ROBUSTNESS"
-)
-
-print(
-    "=" * 125
-)
-
-print(
-    f"{'Noise':>8}"
-    f"{'sigma':>10}"
-    f"{'S2 mean':>12}"
-    f"{'S2 std':>12}"
-    f"{'S2 MAE':>12}"
-    f"{'Hull min':>14}"
-    f"{'Hull max':>14}"
-    f"{'Damage %':>12}"
-    f"{'Pain %':>10}"
-)
-
-print(
-    "-" * 125
-)
+            (
+                coefficients_full,
+                mean_full,
+                std_full
+            ) = fit_minimum_norm(
+                X,
+                p_noisy
+            )
 
 
-for noise_level in noise_levels:
+            hull_min, hull_max = exact_hull_extrema(
+                coefficients_full,
+                mean_full,
+                std_full
+            )
 
-    s = summary[
-        noise_level
-    ]
 
+            hull_minima.append(
+                hull_min
+            )
+
+            hull_maxima.append(
+                hull_max
+            )
+
+
+            # ====================================================
+            # B. S2 withheld interpolation validation
+            #
+            # Train using S1, S3, S4, S5 only.
+            # Predict ORIGINAL S2 pressure location.
+            # ====================================================
+
+            s2_index = 1
+
+            mask = np.ones(
+                len(X),
+                dtype=bool
+            )
+
+            mask[s2_index] = False
+
+
+            (
+                coefficients_s2,
+                mean_s2,
+                std_s2
+            ) = fit_minimum_norm(
+                X[mask],
+                p_noisy[mask]
+            )
+
+
+            s2_prediction = predict(
+                X[s2_index].reshape(
+                    1,
+                    -1
+                ),
+                coefficients_s2,
+                mean_s2,
+                std_s2
+            )[0]
+
+
+            s2_predictions.append(
+                s2_prediction
+            )
+
+
+        # Convert to arrays
+
+        s2_predictions = np.array(
+            s2_predictions
+        )
+
+        hull_minima = np.array(
+            hull_minima
+        )
+
+        hull_maxima = np.array(
+            hull_maxima
+        )
+
+
+        all_s2_predictions[
+            noise_level
+        ] = s2_predictions
+
+        all_hull_minima[
+            noise_level
+        ] = hull_minima
+
+        all_hull_maxima[
+            noise_level
+        ] = hull_maxima
+
+
+        # --------------------------------------------------------
+        # S2 error is evaluated against the original known
+        # measurement p = 17.
+        # --------------------------------------------------------
+
+        s2_errors = (
+            s2_predictions
+            - p_original[1]
+        )
+
+
+        # --------------------------------------------------------
+        # Engineering-conclusion frequencies
+        # --------------------------------------------------------
+
+        damage_frequency = np.mean(
+            hull_minima <= 0
+        )
+
+        pain_frequency = np.mean(
+            hull_maxima > 50
+        )
+
+
+        summary[
+            noise_level
+        ] = {
+
+            "sigma": sigma,
+
+            "s2_mean":
+                np.mean(
+                    s2_predictions
+                ),
+
+            "s2_std":
+                np.std(
+                    s2_predictions
+                ),
+
+            "s2_mae":
+                np.mean(
+                    np.abs(
+                        s2_errors
+                    )
+                ),
+
+            "hull_min_mean":
+                np.mean(
+                    hull_minima
+                ),
+
+            "hull_min_std":
+                np.std(
+                    hull_minima
+                ),
+
+            "hull_max_mean":
+                np.mean(
+                    hull_maxima
+                ),
+
+            "hull_max_std":
+                np.std(
+                    hull_maxima
+                ),
+
+            "damage_frequency":
+                damage_frequency,
+
+            "pain_frequency":
+                pain_frequency
+        }
+
+
+    # ============================================================
+    # 9. Print summary table
+    # ============================================================
 
     print(
-        f"{100*noise_level:>7.1f}%"
-        f"{s['sigma']:>10.4f}"
-        f"{s['s2_mean']:>12.4f}"
-        f"{s['s2_std']:>12.4f}"
-        f"{s['s2_mae']:>12.4f}"
-        f"{s['hull_min_mean']:>14.4f}"
-        f"{s['hull_max_mean']:>14.4f}"
-        f"{100*s['damage_frequency']:>11.2f}%"
-        f"{100*s['pain_frequency']:>9.2f}%"
-    )
-
-
-# ============================================================
-# 10. More detailed quantiles
-# ============================================================
-
-print(
-    "\n95% MONTE CARLO INTERVALS"
-)
-
-print(
-    "=" * 100
-)
-
-
-for noise_level in noise_levels:
-
-    s2_values = all_s2_predictions[
-        noise_level
-    ]
-
-    min_values = all_hull_minima[
-        noise_level
-    ]
-
-    max_values = all_hull_maxima[
-        noise_level
-    ]
-
-
-    s2_interval = np.percentile(
-        s2_values,
-        [2.5, 97.5]
-    )
-
-    min_interval = np.percentile(
-        min_values,
-        [2.5, 97.5]
-    )
-
-    max_interval = np.percentile(
-        max_values,
-        [2.5, 97.5]
-    )
-
-
-    print(
-        f"\nNoise level = "
-        f"{100*noise_level:.1f}%"
+        "MONTE CARLO NOISE ROBUSTNESS"
     )
 
     print(
-        f"S2 prediction 95% interval: "
-        f"[{s2_interval[0]:.4f}, "
-        f"{s2_interval[1]:.4f}]"
+        "=" * 125
     )
 
     print(
-        f"Hull minimum 95% interval: "
-        f"[{min_interval[0]:.4f}, "
-        f"{min_interval[1]:.4f}]"
+        f"{'Noise':>8}"
+        f"{'sigma':>10}"
+        f"{'S2 mean':>12}"
+        f"{'S2 std':>12}"
+        f"{'S2 MAE':>12}"
+        f"{'Hull min':>14}"
+        f"{'Hull max':>14}"
+        f"{'Damage %':>12}"
+        f"{'Pain %':>10}"
     )
 
     print(
-        f"Hull maximum 95% interval: "
-        f"[{max_interval[0]:.4f}, "
-        f"{max_interval[1]:.4f}]"
+        "-" * 125
     )
 
 
-# ============================================================
-# 11. Plot S2 prediction distributions
-# ============================================================
+    for noise_level in noise_levels:
 
-plt.figure(
-    figsize=(9, 5)
-)
+        s = summary[
+            noise_level
+        ]
 
 
-plot_data = [
-    all_s2_predictions[level]
-    for level in noise_levels
-]
+        print(
+            f"{100*noise_level:>7.1f}%"
+            f"{s['sigma']:>10.4f}"
+            f"{s['s2_mean']:>12.4f}"
+            f"{s['s2_std']:>12.4f}"
+            f"{s['s2_mae']:>12.4f}"
+            f"{s['hull_min_mean']:>14.4f}"
+            f"{s['hull_max_mean']:>14.4f}"
+            f"{100*s['damage_frequency']:>11.2f}%"
+            f"{100*s['pain_frequency']:>9.2f}%"
+        )
 
 
-plt.boxplot(
-    plot_data,
-    tick_labels=[
-        f"{100*level:.0f}%"
+    # ============================================================
+    # 10. More detailed quantiles
+    # ============================================================
+
+    print(
+        "\n95% MONTE CARLO INTERVALS"
+    )
+
+    print(
+        "=" * 100
+    )
+
+
+    for noise_level in noise_levels:
+
+        s2_values = all_s2_predictions[
+            noise_level
+        ]
+
+        min_values = all_hull_minima[
+            noise_level
+        ]
+
+        max_values = all_hull_maxima[
+            noise_level
+        ]
+
+
+        s2_interval = np.percentile(
+            s2_values,
+            [2.5, 97.5]
+        )
+
+        min_interval = np.percentile(
+            min_values,
+            [2.5, 97.5]
+        )
+
+        max_interval = np.percentile(
+            max_values,
+            [2.5, 97.5]
+        )
+
+
+        print(
+            f"\nNoise level = "
+            f"{100*noise_level:.1f}%"
+        )
+
+        print(
+            f"S2 prediction 95% interval: "
+            f"[{s2_interval[0]:.4f}, "
+            f"{s2_interval[1]:.4f}]"
+        )
+
+        print(
+            f"Hull minimum 95% interval: "
+            f"[{min_interval[0]:.4f}, "
+            f"{min_interval[1]:.4f}]"
+        )
+
+        print(
+            f"Hull maximum 95% interval: "
+            f"[{max_interval[0]:.4f}, "
+            f"{max_interval[1]:.4f}]"
+        )
+
+
+    # ============================================================
+    # 11. Plot S2 prediction distributions
+    # ============================================================
+
+    plt.figure(
+        figsize=(9, 5)
+    )
+
+
+    plot_data = [
+        all_s2_predictions[level]
         for level in noise_levels
-    ],
-    showfliers=False
-)
+    ]
 
 
-plt.axhline(
-    17.0,
-    linestyle="--",
-    label="Actual S2 pressure = 17"
-)
-
-plt.xlabel(
-    "Measurement noise level"
-)
-
-plt.ylabel(
-    "Predicted pressure at S2"
-)
-
-plt.title(
-    "Noise Sensitivity of S2 Interpolation"
-)
-
-plt.grid(
-    alpha=0.25
-)
-
-plt.legend()
-
-plt.tight_layout()
-
-plt.savefig(
-    "noise_sensitivity_S2.png",
-    dpi=300,
-    bbox_inches="tight"
-)
-
-plt.show()
+    plt.boxplot(
+        plot_data,
+        tick_labels=[
+            f"{100*level:.0f}%"
+            for level in noise_levels
+        ],
+        showfliers=False
+    )
 
 
-# ============================================================
-# 12. Plot convex-hull extrema distributions
-# ============================================================
+    plt.axhline(
+        17.0,
+        linestyle="--",
+        label="Actual S2 pressure = 17"
+    )
 
-plt.figure(
-    figsize=(9, 5)
-)
+    plt.xlabel(
+        "Measurement noise level"
+    )
+
+    plt.ylabel(
+        "Predicted pressure at S2"
+    )
+
+    plt.title(
+        "Noise Sensitivity of S2 Interpolation"
+    )
+
+    plt.grid(
+        alpha=0.25
+    )
+
+    plt.legend()
+
+    plt.tight_layout()
+
+    plt.savefig(
+        "noise_sensitivity_S2.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
 
 
-max_plot_data = [
-    all_hull_maxima[level]
-    for level in noise_levels
-]
+    # ============================================================
+    # 12. Plot convex-hull extrema distributions
+    # ============================================================
+
+    plt.figure(
+        figsize=(9, 5)
+    )
 
 
-plt.boxplot(
-    max_plot_data,
-    tick_labels=[
-        f"{100*level:.0f}%"
+    max_plot_data = [
+        all_hull_maxima[level]
         for level in noise_levels
-    ],
-    showfliers=False
-)
+    ]
 
 
-plt.axhline(
-    50.0,
-    linestyle="--",
-    label="Pain threshold = 50"
-)
+    plt.boxplot(
+        max_plot_data,
+        tick_labels=[
+            f"{100*level:.0f}%"
+            for level in noise_levels
+        ],
+        showfliers=False
+    )
 
-plt.xlabel(
-    "Measurement noise level"
-)
 
-plt.ylabel(
-    "Maximum pressure inside convex hull"
-)
+    plt.axhline(
+        50.0,
+        linestyle="--",
+        label="Pain threshold = 50"
+    )
 
-plt.title(
-    "Noise Sensitivity of Convex-Hull Maximum Pressure"
-)
+    plt.xlabel(
+        "Measurement noise level"
+    )
 
-plt.grid(
-    alpha=0.25
-)
+    plt.ylabel(
+        "Maximum pressure inside convex hull"
+    )
 
-plt.legend()
+    plt.title(
+        "Noise Sensitivity of Convex-Hull Maximum Pressure"
+    )
 
-plt.tight_layout()
+    plt.grid(
+        alpha=0.25
+    )
 
-plt.savefig(
-    "noise_sensitivity_hull_maximum.png",
-    dpi=300,
-    bbox_inches="tight"
-)
+    plt.legend()
 
-plt.show()
+    plt.tight_layout()
+
+    plt.savefig(
+        "noise_sensitivity_hull_maximum.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()

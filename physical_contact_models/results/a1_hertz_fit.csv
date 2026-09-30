@@ -1,0 +1,3 @@
+solver,p0,x0,y0,a,b,SSE,best_hit_rate,params_on_bound,time_s
+"Levenberg-Marquardt (own, analytic Jacobian)",35.059,1.73102,-5,1.78951,22.3802,417.268,1,y0,1.78561
+scipy least_squares (trust-region reflective),35.059,1.73102,-5,1.78951,22.3802,417.268,0.87,y0,3.36017

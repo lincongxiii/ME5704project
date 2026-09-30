@@ -1,0 +1,335 @@
+{
+  "status": "PASS",
+  "metadata": {
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3",
+    "matplotlib": "3.10.7",
+    "quadratic_mc_seed": 5704,
+    "quadratic_mc_samples_per_level": 1000,
+    "timestamp_utc": "2026-09-30T08:21:10Z",
+    "git_commit": "6ba1e0ac8b857e9dd291e535f7b6a76289fc2deb",
+    "git_worktree_dirty": true,
+    "source_sha256": {
+      "c/convex_hull_steepest_ascent.py": "86e4ea7ead842aab4dff747da2a04dfcbd63ce099300cc094833c5a1bc3d61c9",
+      "c/final_model_loocv.py": "8a7ab80d5383c2777282207730094d9f431c643b212c37b71e35f5671418fd53",
+      "c/final_pressure_model.py": "e468c869da760661869dd4beb632e71423b065e0e9bc07a976fe5a25e90f35d4",
+      "c/geometry_check.py": "8ebc0ad4021dc977f40908aa018e2933a609d43a9f3c2e5e6249c2260054f6dc",
+      "c/noise_robustness.py": "ee1732cc95a784396a80f2d250a933f7e38944d3e42b5ff0b70a1cc9a3928e4c",
+      "c/part_c_boundary_parabolic.py": "4006b36c517b18a1bb0a240781035a891943a9af324c133f50f78f0ee9a0cb1d",
+      "c/part_c_newton.py": "082681cc33e6d0c63cec26ac659052e5d7c2420765166e1ad9f23f425150e004",
+      "c/ridge_tradeoff.py": "3a1bf7e161754d28db06107e15ff76b0a04356c99acbd82929e76f119395e71d",
+      "c/scaling_robustness.py": "eb568ae69843b916983080f3a1cdbc634226f9b579d3ea1d41816be3d11898bb",
+      "c/simple_test_case.py": "7ce8e96b8d26d52b7e69e27a5c47827c94c74a18a1eef12c681ad84b61c8378f",
+      "physical_contact_models/data.py": "ca643d92f76b99a6aba83cfab93d863f183f78f1b8025c11921fbb1aff3e75c8",
+      "physical_contact_models/models.py": "1fab5561eec96f2746d3b39653ca7e660dfea376f86440dc15e866dac925ae1d",
+      "physical_contact_models/numerics/__init__.py": "c308d34fbd6a5dbe12d909667a9a03074f2cb0e555007eee95f1557dc19bcf1a",
+      "physical_contact_models/numerics/nlls.py": "7e60480cc7ff38ec875a95819c56ab6afb57aae1fd0204238204e65058bb14d8",
+      "physical_contact_models/numerics/optimize.py": "c7dc760e6a5005f0288f0331157877c53bc5f4716707cf2b3c37f61ca39b3121",
+      "physical_contact_models/numerics/rootfind.py": "b5ef6092ed073ffc46eac60465863851600d79845a411f9b64e3a48f1735ce9f",
+      "physical_contact_models/plotting.py": "7d7a686f13c70fcfc2cd92a4465ea806d1670f704e731119ffd03484c6b9e101",
+      "physical_contact_models/run_contact.py": "ff40af0d0ac5fc9b96a7f431bb377205450b3cb9254a4eff8374f68c3c5f2f47",
+      "physical_contact_models/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "physical_contact_models/tests/test_contact.py": "56b5e7880745ef63e113b9656186595e081b77e1dcad9c499ea291564c737696",
+      "validation/__init__.py": "e8598581dfdfb54b2963c905c7fdb9e9126c0d1bbfe109c29dd5c0d2085a1a47",
+      "validation/benchmarks.py": "119e92de5e2dfa5c946d573750ddb6c80bd8be29e2729c6a86811d94b9c0de91",
+      "validation/conftest.py": "c6275cdc5aa95a4a8de45e58fdd9b26adcba347e170cdf33471b84f2b8e28e19",
+      "validation/run_validation.py": "c9dd5c676877a45420f16d09eecdef25fe41ee0f7500d2bfbe31e03bb2bd319f",
+      "validation/tests/test_validation.py": "b1b7d0034f15433a0cb9a329dfe7fc31c3d90edefe725585caa4058824912674",
+      "validation/tps.py": "1a831046003e95e234b2ed6912b52f31688fc1b4085ddb5c94585737e87f4c6c"
+    },
+    "elapsed_seconds": 18.60767559998203
+  },
+  "tests": {
+    "exit_code": 0,
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "benchmarks": [
+    {
+      "case": "Quadratic recovery at unseen points",
+      "exact": [
+        33.65,
+        40.0,
+        35.0
+      ],
+      "numerical": [
+        33.650000000000006,
+        40.000000000000014,
+        35.00000000000007
+      ],
+      "absolute_error": 7.105427357601002e-14,
+      "tolerance": 1e-10,
+      "iterations": null,
+      "elapsed_seconds": 0.0008556999964639544,
+      "status": "PASS",
+      "interpretation": "Six full-rank synthetic measurements identify six coefficients; five project readings cannot uniquely identify a quadratic."
+    },
+    {
+      "case": "TPS affine reproduction",
+      "exact": [
+        0.6000000000000001,
+        -3.0,
+        -5.0
+      ],
+      "numerical": [
+        0.6000000000000001,
+        -2.999999999999999,
+        -5.0
+      ],
+      "absolute_error": 8.881784197001252e-16,
+      "tolerance": 1e-10,
+      "iterations": null,
+      "elapsed_seconds": 0.000611600000411272,
+      "status": "PASS",
+      "interpretation": "A TPS with affine augmentation must exactly reproduce affine pressure at unseen points."
+    },
+    {
+      "case": "Clean project hull extrema",
+      "exact": [
+        2.0,
+        43.0
+      ],
+      "numerical": [
+        1.9999999999999947,
+        42.999999999999986
+      ],
+      "absolute_error": 1.4210854715202004e-14,
+      "tolerance": 1e-10,
+      "iterations": null,
+      "elapsed_seconds": 0.0009119000169448555,
+      "status": "PASS",
+      "interpretation": "Regression check for the Monte Carlo grid omission; fixed to include sensor vertices."
+    },
+    {
+      "case": "Bisection lower root",
+      "exact": -1.6514837167011076,
+      "numerical": -1.6514837167015912,
+      "absolute_error": 4.836131495267182e-13,
+      "tolerance": 1e-10,
+      "iterations": 43,
+      "elapsed_seconds": 7.360003655776381e-05,
+      "status": "PASS",
+      "interpretation": "Known slice x=1; both analytical roots are checked."
+    },
+    {
+      "case": "Newton lower root",
+      "exact": -1.6514837167011076,
+      "numerical": -1.6514837167011074,
+      "absolute_error": 2.220446049250313e-16,
+      "tolerance": 1e-10,
+      "iterations": 5,
+      "elapsed_seconds": 5.4500007536262274e-05,
+      "status": "PASS",
+      "interpretation": "Convergence flag and root residual are both checked."
+    },
+    {
+      "case": "Bisection upper root",
+      "exact": 5.651483716701108,
+      "numerical": 5.651483716701591,
+      "absolute_error": 4.831690603168681e-13,
+      "tolerance": 1e-10,
+      "iterations": 43,
+      "elapsed_seconds": 8.049997268244624e-05,
+      "status": "PASS",
+      "interpretation": "Known slice x=1; both analytical roots are checked."
+    },
+    {
+      "case": "Newton upper root",
+      "exact": 5.651483716701108,
+      "numerical": 5.651483716701107,
+      "absolute_error": 8.881784197001252e-16,
+      "tolerance": 1e-10,
+      "iterations": 5,
+      "elapsed_seconds": 4.069996066391468e-05,
+      "status": "PASS",
+      "interpretation": "Convergence flag and root residual are both checked."
+    },
+    {
+      "case": "Newton maximum start [0.0, 0.0]",
+      "exact": [
+        1.0,
+        2.0,
+        40.0
+      ],
+      "numerical": [
+        1.0,
+        2.0,
+        40.0
+      ],
+      "absolute_error": 0.0,
+      "tolerance": 1e-10,
+      "iterations": 2,
+      "elapsed_seconds": 0.00046820001443848014,
+      "status": "PASS",
+      "interpretation": "Negative-definite Hessian gives the unique unconstrained maximum."
+    },
+    {
+      "case": "Newton maximum start [4.0, -1.0]",
+      "exact": [
+        1.0,
+        2.0,
+        40.0
+      ],
+      "numerical": [
+        1.0,
+        2.0,
+        40.0
+      ],
+      "absolute_error": 0.0,
+      "tolerance": 1e-10,
+      "iterations": 2,
+      "elapsed_seconds": 0.00020189996575936675,
+      "status": "PASS",
+      "interpretation": "Negative-definite Hessian gives the unique unconstrained maximum."
+    },
+    {
+      "case": "Steepest ascent maximum",
+      "exact": [
+        1.0,
+        2.0,
+        40.0
+      ],
+      "numerical": [
+        0.99999997134882,
+        1.999999999999941,
+        40.0
+      ],
+      "absolute_error": 2.865117998407385e-08,
+      "tolerance": 1e-06,
+      "iterations": 35,
+      "elapsed_seconds": 0.001332600018940866,
+      "status": "PASS",
+      "interpretation": "A local solver is checked against the known unique maximum."
+    },
+    {
+      "case": "Boundary maximum",
+      "exact": [
+        2.0,
+        38.0
+      ],
+      "numerical": [
+        2.0,
+        38.0
+      ],
+      "absolute_error": 0.0,
+      "tolerance": 1e-10,
+      "iterations": 1,
+      "elapsed_seconds": 2.6600027922540903e-05,
+      "status": "PASS",
+      "interpretation": "Unconstrained optimum x=1 is outside [2,4]; endpoint comparison is required."
+    },
+    {
+      "case": "Synthetic quadratic constrained extrema",
+      "exact": [
+        27.550000000000004,
+        39.96340248962655
+      ],
+      "numerical": [
+        27.549999999999997,
+        39.96340248962655
+      ],
+      "absolute_error": 7.105427357601002e-15,
+      "tolerance": 1e-10,
+      "iterations": null,
+      "elapsed_seconds": 0.0003244999679736793,
+      "status": "PASS",
+      "interpretation": "Analytical edge derivatives provide the reference on the actual sensor polygon; (1,2) is outside it."
+    },
+    {
+      "case": "Nonlinear parameter recovery",
+      "exact": [
+        3.0,
+        0.7,
+        0.5
+      ],
+      "numerical": [
+        3.0,
+        0.7000000000000001,
+        0.5000000000000002
+      ],
+      "absolute_error": 2.220446049250313e-16,
+      "tolerance": 1e-07,
+      "iterations": 9,
+      "elapsed_seconds": 0.002304699970409274,
+      "status": "PASS",
+      "interpretation": "Known exponential parameters; both parameter error and residual cost are checked."
+    },
+    {
+      "case": "Hertz Jacobian cross-check",
+      "exact": 0.0,
+      "numerical": 2.7881842470378615e-06,
+      "absolute_error": 2.7881842470378615e-06,
+      "tolerance": 0.0001,
+      "iterations": null,
+      "elapsed_seconds": 0.0013703000149689615,
+      "status": "PASS",
+      "interpretation": "Central differences away from the contact boundary; outside-contact data derivatives must be zero."
+    },
+    {
+      "case": "Known ring maximum",
+      "exact": [
+        50.0,
+        0.5
+      ],
+      "numerical": [
+        50.0,
+        0.5
+      ],
+      "absolute_error": 0.0,
+      "tolerance": 1e-08,
+      "iterations": null,
+      "elapsed_seconds": 0.003313400025945157,
+      "status": "PASS",
+      "interpretation": "Crest circle intersects the hull; p<=A proves the maximum is 50."
+    }
+  ],
+  "quadratic_mc": [
+    {
+      "noise_level": 0.0,
+      "damage_count": 0,
+      "pain_count": 0,
+      "samples": 1000,
+      "maximum_interval": [
+        42.999999999999986,
+        42.999999999999986
+      ]
+    },
+    {
+      "noise_level": 0.02,
+      "damage_count": 5,
+      "pain_count": 0,
+      "samples": 1000,
+      "maximum_interval": [
+        41.37668424513782,
+        44.59702427891472
+      ]
+    },
+    {
+      "noise_level": 0.05,
+      "damage_count": 163,
+      "pain_count": 0,
+      "samples": 1000,
+      "maximum_interval": [
+        39.09886663130837,
+        47.04958282305634
+      ]
+    },
+    {
+      "noise_level": 0.1,
+      "damage_count": 298,
+      "pain_count": 32,
+      "samples": 1000,
+      "maximum_interval": [
+        35.92624358933659,
+        50.74335055108669
+      ]
+    }
+  ],
+  "full_contact": {
+    "requested": false,
+    "status": "not rerun; report uses stored contact-study results"
+  }
+}
