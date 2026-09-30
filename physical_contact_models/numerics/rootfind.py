@@ -27,6 +27,8 @@ def scan_brackets(f, a, b, n=400):
             out.append((xs[i], xs[i]))
         elif fs[i] * fs[i + 1] < 0:
             out.append((xs[i], xs[i + 1]))
+    if fs[-1] == 0.0:
+        out.append((xs[-1], xs[-1]))
     return out
 
 

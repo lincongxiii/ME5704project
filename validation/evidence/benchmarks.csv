@@ -1,0 +1,16 @@
+﻿case,exact,numerical,absolute_error,tolerance,iterations,elapsed_seconds,status,interpretation
+Quadratic recovery at unseen points,"[33.65, 40.0, 35.0]","[33.650000000000006, 40.000000000000014, 35.00000000000007]",7.105427357601002e-14,1e-10,,0.0008556999964639544,PASS,Six full-rank synthetic measurements identify six coefficients; five project readings cannot uniquely identify a quadratic.
+TPS affine reproduction,"[0.6000000000000001, -3.0, -5.0]","[0.6000000000000001, -2.999999999999999, -5.0]",8.881784197001252e-16,1e-10,,0.000611600000411272,PASS,A TPS with affine augmentation must exactly reproduce affine pressure at unseen points.
+Clean project hull extrema,"[2.0, 43.0]","[1.9999999999999947, 42.999999999999986]",1.4210854715202004e-14,1e-10,,0.0009119000169448555,PASS,Regression check for the Monte Carlo grid omission; fixed to include sensor vertices.
+Bisection lower root,-1.6514837167011076,-1.6514837167015912,4.836131495267182e-13,1e-10,43,7.360003655776381e-05,PASS,Known slice x=1; both analytical roots are checked.
+Newton lower root,-1.6514837167011076,-1.6514837167011074,2.220446049250313e-16,1e-10,5,5.4500007536262274e-05,PASS,Convergence flag and root residual are both checked.
+Bisection upper root,5.651483716701108,5.651483716701591,4.831690603168681e-13,1e-10,43,8.049997268244624e-05,PASS,Known slice x=1; both analytical roots are checked.
+Newton upper root,5.651483716701108,5.651483716701107,8.881784197001252e-16,1e-10,5,4.069996066391468e-05,PASS,Convergence flag and root residual are both checked.
+"Newton maximum start [0.0, 0.0]","[1.0, 2.0, 40.0]","[1.0, 2.0, 40.0]",0.0,1e-10,2,0.00046820001443848014,PASS,Negative-definite Hessian gives the unique unconstrained maximum.
+"Newton maximum start [4.0, -1.0]","[1.0, 2.0, 40.0]","[1.0, 2.0, 40.0]",0.0,1e-10,2,0.00020189996575936675,PASS,Negative-definite Hessian gives the unique unconstrained maximum.
+Steepest ascent maximum,"[1.0, 2.0, 40.0]","[0.99999997134882, 1.999999999999941, 40.0]",2.865117998407385e-08,1e-06,35,0.001332600018940866,PASS,A local solver is checked against the known unique maximum.
+Boundary maximum,"[2.0, 38.0]","[2.0, 38.0]",0.0,1e-10,1,2.6600027922540903e-05,PASS,"Unconstrained optimum x=1 is outside [2,4]; endpoint comparison is required."
+Synthetic quadratic constrained extrema,"[27.550000000000004, 39.96340248962655]","[27.549999999999997, 39.96340248962655]",7.105427357601002e-15,1e-10,,0.0003244999679736793,PASS,"Analytical edge derivatives provide the reference on the actual sensor polygon; (1,2) is outside it."
+Nonlinear parameter recovery,"[3.0, 0.7, 0.5]","[3.0, 0.7000000000000001, 0.5000000000000002]",2.220446049250313e-16,1e-07,9,0.002304699970409274,PASS,Known exponential parameters; both parameter error and residual cost are checked.
+Hertz Jacobian cross-check,0.0,2.7881842470378615e-06,2.7881842470378615e-06,0.0001,,0.0013703000149689615,PASS,Central differences away from the contact boundary; outside-contact data derivatives must be zero.
+Known ring maximum,"[50.0, 0.5]","[50.0, 0.5]",0.0,1e-08,,0.003313400025945157,PASS,Crest circle intersects the hull; p<=A proves the maximum is 50.
