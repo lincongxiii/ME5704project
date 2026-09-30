@@ -14,6 +14,8 @@ Three existing image parts are replaced with colour plots of the same shape and 
 
 The contribution heading begins a new page and its introductory paragraph stays with the table, preserving the assignment's request for a contribution page after English reflow.
 
+2026-10-01 user revision: omit the References heading, all five bibliography entries and corresponding in-text citation markers. Retain software versions and code provenance in Appendix A.
+
 ## Checks
 
 The builder asserts that no Chinese visible text remains, verifies exactly three images, and audits that only the permitted package parts changed. The source has already been visually inspected on all 18 pages. Render the final English copy through Word and inspect every final page for table wrapping, caption attachment, equation alignment and overflow. The packaged renderer cannot run in this Windows environment because no bundled soffice is available; Word COM export and bundled Poppler provide the render fallback. QA PDF/page images are intermediates, not deliverables.

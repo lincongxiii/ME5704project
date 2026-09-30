@@ -30,6 +30,14 @@ def replace(p,value):
 
 for i,t in text.items():replace(paras[int(i)],t)
 
+# Remove the bibliography and its in-text citation markers at the user's request.
+for p in paras[152:158]:
+    p.getparent().remove(p)
+for p in paras[:152]+paras[158:]:
+    for t in p.findall('.//w:t',NS):
+        if t.text:
+            t.text=re.sub(r' ?\[[1-5](?:[–-][1-5])?\]', '', t.text)
+
 # Keep the required contribution statement together on its own page.
 for index,tag in [(164,'pageBreakBefore'),(165,'keepNext')]:
     pr=paras[index].find('w:pPr',NS)
